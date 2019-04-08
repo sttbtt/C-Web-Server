@@ -59,6 +59,23 @@ int send_response(int fd, char *header, char *content_type, void *body, int cont
     // IMPLEMENT ME! //
     ///////////////////
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // char *body = "<h1>Hello, world!</h1>";
+    // int length = strlen(body);
+
+    // Let's build the actual response now
+    int response_length = sprintf(response, 
+        "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: %d\nConnection: close\n\n%s\n",
+        content_length,
+        body
+    );
+
+    // printf("response length: %d\n", response_length);
+    printf("%s", response);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
     // Send it all!
     int rv = send(fd, response, response_length, 0);
 
@@ -158,6 +175,7 @@ void handle_http_request(int fd, struct cache *cache)
     // IMPLEMENT ME! //
     ///////////////////
 
+    resp_404(1);
     // Read the three components of the first request line
 
     // If GET, handle the get endpoints
