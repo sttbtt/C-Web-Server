@@ -3,6 +3,7 @@
 #include <string.h>
 #include "hashtable.h"
 #include "cache.h"
+#include "llist.h"
 
 /**
  * Allocate a cache entry
@@ -125,6 +126,9 @@ void cache_put(struct cache *cache, char *path, char *content_type, void *conten
     ///////////////////
     // IMPLEMENT ME! //
     ///////////////////
+
+    llist_append();
+    
 }
 
 /**

@@ -5,7 +5,7 @@
  * 
  *    curl -D - http://localhost:3490/
  *    curl -D - http://localhost:3490/d20
- *    curl -D - http://localhost:3490/date
+ *    curl -D - http://localhost:3490/cat.jpg
  * 
  * You can also test the above URLs in your browser! They should work!
  * 
@@ -53,31 +53,37 @@ int send_response(int fd, char *header, char *content_type, void *body, int cont
     const int max_response_size = 262144;
     char response[max_response_size];
 
+    // (void)header;
+    // (void)content_type;
+    // (void)body;
+    // (void)content_length;
+
+    time_t time_of_day = time(NULL); // Unix timestamp
+
     // Build HTTP response and store it in response
 
     ///////////////////
-    // IMPLEMENT ME! //
+    // IMPLEMENTED!  //
     ///////////////////
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // char *body = "<h1>Hello, world!</h1>";
-    // int length = strlen(body);
-
-    // Let's build the actual response now
+    
     int response_length = sprintf(response, 
-        "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: %d\nConnection: close\n\n%s\n",
+        "%s\n"
+        "Content-Type: %s\n"
+        "Content-Length: %d\n"
+        "Date: %s"
+        "Connection: close\n"
+        "\n",
+        header,
+        content_type,
         content_length,
-        body
+        asctime(gmtime(&time_of_day))
     );
 
-    // printf("response length: %d\n", response_length);
-    printf("%s", response);
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
+    // alternate way to send body, also add + content_length to response_length in rv below
+    memcpy(response + response_length, body, content_length);
 
     // Send it all!
-    int rv = send(fd, response, response_length, 0);
+    int rv = send(fd, response, response_length + content_length, 0);
 
     if (rv < 0) {
         perror("send");
@@ -86,23 +92,25 @@ int send_response(int fd, char *header, char *content_type, void *body, int cont
     return rv;
 }
 
-
 /**
  * Send a /d20 endpoint response
  */
 void get_d20(int fd)
 {
     // Generate a random number between 1 and 20 inclusive
+
+    ///////////////////
+    // IMPLEMENTED!  //
+    ///////////////////
     
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
+    int ran_num = rand() % 20 + 1;
 
     // Use send_response() to send it back as text/plain data
 
-    ///////////////////
-    // IMPLEMENT ME! //
-    ///////////////////
+    char response_body[20];
+    sprintf(response_body, "Random Number: %d\n\n", ran_num);
+
+    send_response(fd, "HTTP/1.1 200 OK", "text/plain", response_body, strlen(response_body));
 }
 
 /**
@@ -136,9 +144,34 @@ void resp_404(int fd)
  */
 void get_file(int fd, struct cache *cache, char *request_path)
 {
+
     ///////////////////
-    // IMPLEMENT ME! //
+    // IMPLEMENTED!  //
     ///////////////////
+    
+    char filepath[4096];
+    struct file_data *filedata;
+
+    (void)cache;
+
+    // construct the full path
+    // sprintf("filepath, %s/%s", SERVER_ROOT, request_path);
+    snprintf(filepath, sizeof filepath, "%s/%s", SERVER_ROOT, request_path);
+    filedata = file_load(filepath);
+
+    // Check to see if file_load returned a valid file
+    if (filedata == NULL) {
+        resp_404(fd);
+        return;
+    }
+
+    char *mime_type = mime_type_get(filepath);
+    // we fetched a valid file
+    // make sure we send it
+    send_response(fd, "HTTP/1.1 200 OK", mime_type, filedata->data, filedata->size);
+
+    // free the file data struct after it's been sent
+    file_free(filedata);
 }
 
 /**
@@ -149,9 +182,13 @@ void get_file(int fd, struct cache *cache, char *request_path)
  */
 char *find_start_of_body(char *header)
 {
+    (void)header;
+
     ///////////////////
     // IMPLEMENT ME! // (Stretch)
     ///////////////////
+
+    return 0;
 }
 
 /**
@@ -159,8 +196,12 @@ char *find_start_of_body(char *header)
  */
 void handle_http_request(int fd, struct cache *cache)
 {
+    (void)cache;
+
     const int request_buffer_size = 65536; // 64K
     char request[request_buffer_size];
+    char request_type[8];
+    char request_path[1024];
 
     // Read request
     int bytes_recvd = recv(fd, request, request_buffer_size - 1, 0);
@@ -170,19 +211,25 @@ void handle_http_request(int fd, struct cache *cache)
         return;
     }
 
-
     ///////////////////
-    // IMPLEMENT ME! //
+    // IMPLEMENTED!  //
     ///////////////////
-
-    resp_404(1);
+    
     // Read the three components of the first request line
-
+    sscanf(request, "%s %s", request_type, request_path);
+    printf("REQUEST: %s %s\n", request_type, request_path);
+    
     // If GET, handle the get endpoints
+    if (strcmp(request_type, "GET") == 0) {
+        get_file(fd, cache, request_path);
+    }
 
     //    Check if it's /d20 and handle that special case
     //    Otherwise serve the requested file by calling get_file()
 
+    if (strcmp(request_path, "/d20") == 0) {
+        get_d20(fd);
+    }
 
     // (Stretch) If POST, handle the post request
 }
