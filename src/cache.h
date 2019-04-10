@@ -1,7 +1,7 @@
 #ifndef _WEBCACHE_H_
 #define _WEBCACHE_H_
 
-// Individual hash table entry
+// Individual hash table entry - Nodes in the DLL
 struct cache_entry {
     char *path;   // Endpoint path--key to the cache
     char *content_type;
