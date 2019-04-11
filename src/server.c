@@ -6,6 +6,7 @@
  *    curl -D - http://localhost:3490/
  *    curl -D - http://localhost:3490/d20
  *    curl -D - http://localhost:3490/cat.jpg
+ *    curl -D - http://localhost:3490/index.html
  * 
  * You can also test the above URLs in your browser! They should work!
  * 
@@ -146,12 +147,13 @@ void get_file(int fd, struct cache *cache, char *request_path)
     
     char filepath[4096];
     struct file_data *filedata = NULL;
+    char *mime_type;
 
     // (void)cache;
 
     // construct the full path
     // sprintf("filepath, %s/%s", SERVER_ROOT, request_path);
-    snprintf(filepath, sizeof filepath, "%s/%s", SERVER_ROOT, request_path);
+    snprintf(filepath, sizeof filepath, "%s%s", SERVER_ROOT, request_path);
 
     struct cache_entry *entry = cache_get(cache, filepath);
 
@@ -162,14 +164,15 @@ void get_file(int fd, struct cache *cache, char *request_path)
         // Check to see if file_load returned a valid file
         if (filedata == NULL) {
             resp_404(fd);
-            return;
+
         }
     }
 
-    char *mime_type = mime_type_get(filepath);
+    mime_type = mime_type_get(filepath);
     // we fetched a valid file
     // make sure we send it
     cache_put(cache, filepath, mime_type, filedata->data, filedata->size);
+
     send_response(fd, "HTTP/1.1 200 OK", mime_type, filedata->data, filedata->size);
 
     // free the file data struct after it's been sent

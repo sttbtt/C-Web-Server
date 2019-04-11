@@ -32,9 +32,6 @@ void free_entry(struct cache_entry *entry)
     // IMPLEMENT ME! //
     ///////////////////
 
-    free(entry->path);
-    free(entry->content_type);
-    free(entry->content);
     free(entry);
 }
 
@@ -60,22 +57,33 @@ void dllist_insert_head(struct cache *cache, struct cache_entry *ce)
  */
 void dllist_move_to_head(struct cache *cache, struct cache_entry *ce)
 {
+    printf("move to head\n");
     if (ce != cache->head) {
         if (ce == cache->tail) {
             // We're the tail
+            printf("1\n");
             cache->tail = ce->prev;
+            printf("2\n");
             cache->tail->next = NULL;
+            printf("3\n");
 
         } else {
             // We're neither the head nor the tail
+            printf("4\n");
             ce->prev->next = ce->next;
+            printf("5\n");
             ce->next->prev = ce->prev;
+            printf("6\n");
         }
-
+        printf("7\n");
         ce->next = cache->head;
+        printf("8\n");
         cache->head->prev = ce;
+        printf("9\n");
         ce->prev = NULL;
+        printf("10\n");
         cache->head = ce;
+        printf("move to head done\n");
     }
 }
 
@@ -109,10 +117,12 @@ struct cache *cache_create(int max_size, int hashsize)
     // IMPLEMENT ME! //
     ///////////////////
 
-    struct cache *cache = malloc(sizeof(cache));
-    cache->index = hashtable_create(max_size, hashsize);
+    struct cache *cache = malloc(sizeof(struct cache));
+    cache->index = hashtable_create(hashsize, NULL);
     cache->max_size = max_size;
     cache->cur_size = 0;
+    cache->head = NULL;
+    cache->tail = NULL;
 
     return cache;
 }
@@ -146,6 +156,7 @@ void cache_put(struct cache *cache, char *path, char *content_type, void *conten
     ///////////////////
     // IMPLEMENT ME! //
     ///////////////////
+    printf("cache put\n");
 
     struct cache_entry *new_entry = alloc_entry(path, content_type, content, content_length);
     dllist_insert_head(cache, new_entry);
@@ -153,13 +164,11 @@ void cache_put(struct cache *cache, char *path, char *content_type, void *conten
     cache->cur_size++;
 
     if (cache->cur_size > cache->max_size) {
-        struct cache_entry *remove_entry = dllist_remove_tail(cache);
-        hashtable_delete(cache->index, remove_entry->path);
-        free_entry(remove_entry);
-        cache->cur_size = cache->max_size;
+        hashtable_delete(cache->index, cache->tail->path);
+        struct cache_entry *old_tail = dllist_remove_tail(cache);
+        cache->tail->prev = old_tail->prev->prev;
+        free_entry(old_tail);
     }
-
-    free_entry(new_entry);
 }
 
 /**
@@ -170,13 +179,18 @@ struct cache_entry *cache_get(struct cache *cache, char *path)
     ///////////////////
     // IMPLEMENT ME! //
     ///////////////////
+    printf("cache get\n");
+    printf("%s\n", path);
 
     struct cache_entry *entry = hashtable_get(cache->index, path);
 
-    if (entry != NULL) {
-        dllist_move_to_head(cache, entry);
-    } else {
-        printf("Page not cached.\n");
+    if (entry == NULL) {
+        printf("return null\n");
+        return NULL;
     }
+
+    printf("%s", entry->content);
+
+    dllist_move_to_head(cache, entry);
     return entry;
 }
